@@ -1,0 +1,139 @@
+package org.example;
+
+import com.google.gson.Gson;
+import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.Producer;
+import org.apache.kafka.clients.producer.ProducerRecord;
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Properties;
+import java.util.UUID;
+
+/**
+ * SimpleFlightProducer is a class responsible for producing flight data to a Kafka topic.
+ * It utilizes the Kafka Producer API to send serialized GSON representations of Flight objects
+ * to a specified Kafka topic. This class is suitable for both standalone and Docker environments.
+ */
+public class SimpleFlightProducer {
+
+    private final boolean inDocker = new File("/.dockerenv").exists(); // DONT CHANGE
+
+    private final Producer<String, String> producer; // DONT CHANGE
+
+    /**
+     * Default constructor that initializes the Kafka producer using properties.
+     */
+    public SimpleFlightProducer() { // DONT CHANGE
+        this.producer = createKafkaProducer();
+    }
+
+    /**
+     * Constructor that allows passing a custom Kafka producer instance.
+     *
+     * @param producer A Kafka producer instance to be used for producing messages.
+     */
+    public SimpleFlightProducer(Producer<String, String> producer) { // DONT CHANGE
+        this.producer = producer;
+    }
+
+    /**
+     * Creates and configures a Kafka producer instance using properties loaded from a file.
+     * This method checks if the application is running in a Docker environment and adjusts
+     * the Kafka bootstrap servers accordingly.
+     *
+     * @return A configured KafkaProducer instance.
+     */
+    public Producer<String, String> createKafkaProducer() { // DONT CHANGE
+        try (var stream = Producer.class.getClassLoader().getResourceAsStream("producer.properties")) {
+            Properties props = new Properties();
+            props.load(stream);
+            props.setProperty("client.id", "producer-" + UUID.randomUUID());
+            if (inDocker) {
+                // Use Docker-specific Kafka bootstrap servers if in Docker
+                props.setProperty("bootstrap.servers", props.getProperty("bootstrap.servers.docker"));
+            }
+            System.out.println("Producer initialized:");
+            return new KafkaProducer<>(props);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Produces a single Flight object to the specified Kafka topic.
+     *
+     * @param flight The Flight object to be produced.
+     * @param topic  The Kafka topic to which the flight data will be sent.
+     */
+    public void produceFlight(Flight flight, String topic) {
+        Gson gson = new Gson();
+        String flightJson = gson.toJson(flight);
+        producer.send(new ProducerRecord<>(topic, Integer.toString(flight.id), flightJson));
+    }
+
+    /**
+     * Produces multiple Flight objects to the specified Kafka topic.
+     *
+     * @param flights The list of Flight objects to be produced.
+     * @param topic   The Kafka topic to which the flights will be sent.
+     */
+    public void produceFlights(List<Flight> flights, String topic) {
+        for (Flight flight : flights) {
+            produceFlight(flight, topic);
+        }
+    }
+
+    /**
+     * Reads data from a CSV file and converts each row into a Flight object.
+     *
+     * @param filePath Path to the CSV file.
+     * @return A list of Flight objects created from the CSV data.
+     * @throws IOException If an error occurs during file reading.
+     */
+    public List<Flight> readFlightsFromCSV(String filePath) throws IOException {
+        List<Flight> flights = new ArrayList<>();
+        try (BufferedReader br = new BufferedReader(new FileReader(filePath))) {
+            String line;
+            br.readLine(); // Skip header line
+            while ((line = br.readLine()) != null) {
+                String[] fields = line.split(",");
+                Flight flight = new Flight(fields);
+                flights.add(flight);
+            }
+        }
+        return flights;
+    }
+
+    /**
+     * Flushes pending records to Kafka broker.
+     */
+    public void flush() {
+        producer.flush();
+    }
+
+    /**
+     * Closes the producer and releases any resources held by the class.
+     */
+    public void close() {
+        producer.close();
+    }
+
+    public static void main(String[] args) {
+        SimpleFlightProducer simpleFlightProducer = new SimpleFlightProducer();
+        String csvFilePath = "D:\\coding\\projects\\DSTN\\project\\data\\data.csv"; // Change this to the actual path
+        try {
+            List<Flight> flights = simpleFlightProducer.readFlightsFromCSV(csvFilePath);
+            simpleFlightProducer.produceFlights(flights, "flights-topic");
+            simpleFlightProducer.flush();
+        } catch (IOException e) {
+            System.err.println("Error reading CSV file: " + e.getMessage());
+        } finally {
+            simpleFlightProducer.close();
+        }
+    }
+}
