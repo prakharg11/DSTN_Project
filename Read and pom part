@@ -1,0 +1,144 @@
+ReadFromKafka
+package org.example;
+
+import org.apache.flink.api.common.functions.MapFunction;
+import org.apache.flink.connector.kafka.source.KafkaSource;
+import org.apache.flink.streaming.api.datastream.DataStream;
+import org.apache.flink.streaming.api.environment.StreamExecutionEnvironment;
+import org.apache.flink.streaming.connectors.kafka.FlinkKafkaConsumer;
+//import org.apache.flink.api.common.serialization.SimpleStringSchema;
+
+import org.apache.flink.streaming.util.serialization.SimpleStringSchema;
+
+import java.util.Properties;
+
+/**
+ * Simple example on how to read with a Kafka consumer
+ */
+public class ReadFromKafka {
+
+    public static void main(String[] args) throws Exception {
+        // create execution environment
+        StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+
+        // set Kafka properties
+        Properties kafkaProperties = new Properties();
+        kafkaProperties.setProperty("bootstrap.servers", "kafka:9092");
+        kafkaProperties.setProperty("zookeeper.connect", "zookeeper:2181");
+        kafkaProperties.setProperty("group.id", "myGroup");
+
+//        KafkaSource<>
+        // define Kafka topic
+        String topic = "flights-topic";
+//
+//        // create Kafka consumer
+        DataStream<String> messageStream = env.addSource(
+                new FlinkKafkaConsumer<>(topic, new SimpleStringSchema(), kafkaProperties)
+        );
+//
+//        // process stream data
+//        messageStream.rebalance().map(new MapFunction<String, String>() {
+//            private static final long serialVersionUID = -6867736771747690202L;
+//
+//            @Override
+//            public String map(String value) throws Exception {
+//                return "Kafka and Flink says: " + value;
+//            }
+//        }).print();
+
+        // execute Flink environment
+//        env.execute("Kafka to Flink Stream");
+    }
+}
+
+pom for this 
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>app</groupId>
+    <artifactId>take-home</artifactId>
+    <version>1.0-SNAPSHOT</version>
+
+    <properties>
+        <maven.compiler.source>11</maven.compiler.source>
+        <maven.compiler.target>11</maven.compiler.target>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.apache.kafka</groupId>
+            <artifactId>kafka-clients</artifactId>
+            <version>3.8.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.kafka</groupId>
+            <artifactId>kafka-streams</artifactId>
+            <version>3.8.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>2.11.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter-api</artifactId>
+            <version>5.11.2</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-simple</artifactId>
+            <version>2.0.16</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>2.0.16</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.flink</groupId>
+            <artifactId>flink-java</artifactId>
+            <version>1.16.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.flink</groupId>
+            <artifactId>flink-streaming-java</artifactId>
+            <version>1.16.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.flink</groupId>
+            <artifactId>flink-clients</artifactId>
+            <version>1.16.0</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.flink</groupId>
+            <artifactId>flink-connector-kafka</artifactId>
+            <version>1.16.0</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.4.2</version>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <mainClass>org.example.ReadFromKafka</mainClass>
+                        </manifest>
+                    </archive>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>
+
