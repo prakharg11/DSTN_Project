@@ -1,0 +1,59 @@
+version: "3.8"  # Use the latest version 3.x format
+
+services:
+  zookeeper:
+    image: docker.io/bitnami/zookeeper:3.7
+    container_name: zookeeper
+    ports:
+      - "2181:2181"
+    volumes:
+      - "zookeeper_data:/bitnami"
+    environment:
+      ALLOW_ANONYMOUS_LOGIN: "yes"
+
+  kafka:
+    image: docker.io/bitnami/kafka:3
+    container_name: kafka
+    depends_on:
+      - zookeeper
+    ports:
+      - "9092:9092"
+      - "9093:9093"
+    volumes:
+      - "kafka_data:/bitnami"
+    environment:
+      KAFKA_BROKER_ID: "1"
+      KAFKA_CFG_ZOOKEEPER_CONNECT: "zookeeper:2181"
+      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: "DOCKER:PLAINTEXT,HOST:PLAINTEXT"
+      KAFKA_CFG_LISTENERS: "DOCKER://:9092,HOST://:9093"
+      KAFKA_CFG_ADVERTISED_LISTENERS: "DOCKER://kafka:9092,HOST://localhost:9093"
+      KAFKA_CFG_INTER_BROKER_LISTENER_NAME: "DOCKER"
+      ALLOW_PLAINTEXT_LISTENER: "yes"
+
+  flink-jobmanager:
+    image: flink:1.19.1-scala_2.12
+    container_name: flink-jobmanager
+    depends_on:
+      - kafka
+    ports:
+      - "8081:8081"  # Flink Web UI
+    environment:
+      JOB_MANAGER_RPC_ADDRESS: "flink-jobmanager"
+    command: jobmanager
+    volumes:
+      - ./target:/opt/flink/jobs  # Mount the target directory where your JAR file is located
+
+  flink-taskmanager:
+    image: flink:1.19.1-scala_2.12
+    container_name: flink-taskmanager
+    depends_on:
+      - flink-jobmanager
+    environment:
+      JOB_MANAGER_RPC_ADDRESS: "flink-jobmanager"
+    command: taskmanager
+    volumes:
+      - ./target:/opt/flink/jobs  # Mount the target directory where your JAR file is located
+
+volumes:
+  kafka_data:
+  zookeeper_data:
