@@ -1,0 +1,83 @@
+package org.example;
+
+import com.google.gson.Gson;
+import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.Producer;
+import org.apache.kafka.clients.producer.ProducerRecord;
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.Properties;
+import java.util.UUID;
+
+public class SimpleFlightProducer {
+
+    private final boolean inDocker = new File("/.dockerenv").exists(); // DONT CHANGE
+    private final Producer<String, String> producer; // DONT CHANGE
+
+    public SimpleFlightProducer() { // DONT CHANGE
+        this.producer = createKafkaProducer();
+    }
+
+    public SimpleFlightProducer(Producer<String, String> producer) { // DONT CHANGE
+        this.producer = producer;
+    }
+
+    public Producer<String, String> createKafkaProducer() { // DONT CHANGE
+        try (var stream = Producer.class.getClassLoader().getResourceAsStream("producer.properties")) {
+            Properties props = new Properties();
+            props.load(stream);
+            props.setProperty("client.id", "producer-" + UUID.randomUUID());
+            if (inDocker) {
+                props.setProperty("bootstrap.servers", props.getProperty("bootstrap.servers.docker"));
+            }
+            System.out.println("Producer initialized:");
+            return new KafkaProducer<>(props);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void produceFlight(Flight flight, String topic) {
+        Gson gson = new Gson();
+        String flightJson = gson.toJson(flight);
+        producer.send(new ProducerRecord<>(topic, Integer.toString(flight.id), flightJson));
+    }
+
+    public void readAndProduceFlightsFromCSV(String filePath, String topic) throws IOException {
+        try (BufferedReader br = new BufferedReader(new FileReader(filePath))) {
+            String line;
+            br.readLine(); // Skip header line
+            while ((line = br.readLine()) != null) {
+                String[] fields = line.split(",");
+                System.out.println(line);
+                Flight flight = new Flight(fields);
+                produceFlight(flight, topic);
+            }
+        }
+    }
+
+    public void flush() {
+        producer.flush();
+    }
+
+    public void close() {
+        producer.close();
+    }
+
+    public static void main(String[] args) {
+        SimpleFlightProducer simpleFlightProducer = new SimpleFlightProducer();
+        String csvFilePath = "D:\\coding\\projects\\DSTN\\project\\data\\data.csv"; // Change this to the actual path
+        try {
+            simpleFlightProducer.readAndProduceFlightsFromCSV(csvFilePath, "flights-topic");
+            simpleFlightProducer.flush();
+            System.out.println("Produce Finished");
+        } catch (IOException e) {
+            System.err.println("Error reading CSV file: " + e.getMessage());
+        } finally {
+            simpleFlightProducer.close();
+        }
+    }
+}
