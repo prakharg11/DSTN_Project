@@ -34,8 +34,17 @@ class MasterNode:
         
         if data['action'] == 'write':
             file_name = data['file_name']
-            blocks = data['blocks']
+            blocks = data['blocks']  # Blocks and their data
+            block_data = data['block_data']
             block_locations = self.allocate_blocks(blocks)
+            
+            # Distribute blocks to WorkerNodes
+            for block, replicas in block_locations.items():
+                for replica in replicas:
+                    node_host, node_port = replica.split(":")
+                    self.send_block_to_worker(node_host, int(node_port), block, block_data[block],file_name)
+            
+            # Update metadata and save
             with self.lock:
                 self.metadata[file_name] = block_locations
                 self.save_metadata()  # Save metadata to disk
@@ -44,7 +53,9 @@ class MasterNode:
         elif data['action'] == 'read':
             file_name = data['file_name']
             if file_name in self.metadata:
-                client_socket.send(json.dumps(self.metadata[file_name]).encode())
+                block_locations = self.metadata[file_name]
+                file_data = self.read_blocks_from_workers(block_locations,file_name)
+                client_socket.send(json.dumps(file_data).encode())
             else:
                 client_socket.send(b"File not found")
         
@@ -53,7 +64,7 @@ class MasterNode:
             with self.lock:
                 self.heartbeat_data[node_id] = time.time()
             client_socket.send(b"Heartbeat acknowledged")
-            print("Heartbeat")
+            print("Heartbeat from", node_id)
         
         client_socket.close()
 
@@ -61,10 +72,58 @@ class MasterNode:
         """Simulate block allocation across worker nodes."""
         nodes = list(self.heartbeat_data.keys())
         block_locations = {}
-        for i, block in enumerate(blocks):
-            replicas = nodes[i:i + self.replication_factor]
+        for block in blocks:
+            replicas = nodes[:self.replication_factor]  # Simple round-robin for now
             block_locations[block] = replicas
         return block_locations
+
+    def send_block_to_worker(self, worker_host, worker_port, block_id, block_data,file_name):
+        """Send block data to a WorkerNode."""
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as worker_socket:
+                worker_socket.connect((worker_host, worker_port))
+                write_request = json.dumps({
+                    "action": "write_block",
+                    "file_name": file_name,
+                    "block_id": block_id,
+                    "data": block_data
+                })
+                worker_socket.send(write_request.encode())
+                response = worker_socket.recv(1024).decode()
+                print(f"WorkerNode {worker_host}:{worker_port} response: {response}")
+        except ConnectionRefusedError:
+            print(f"Failed to connect to WorkerNode {worker_host}:{worker_port}")
+
+    def read_blocks_from_workers(self, block_locations,file_name):
+        """Fetch block data from WorkerNodes."""
+        file_data = {}
+        for block, replicas in block_locations.items():
+            for replica in replicas:
+                node_host, node_port = replica.split(":")
+                block_data = self.read_block_from_worker(node_host, int(node_port), block, file_name)
+                if block_data:
+                    file_data[block] = block_data
+                    break  # Only need one successful read
+        return file_data
+
+    def read_block_from_worker(self, worker_host, worker_port, block_id,file_name):
+        """Request block data from a WorkerNode."""
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as worker_socket:
+                worker_socket.connect((worker_host, worker_port))
+                read_request = json.dumps({
+                    "action": "read_block",
+                    "file_name": file_name,
+                    "block_id": block_id
+                })
+                worker_socket.send(read_request.encode())
+                response = worker_socket.recv(1024).decode()
+                if response != "Block not found":
+                    print(f"Read block {block_id} from WorkerNode {worker_host}:{worker_port}")
+                    return response
+        except ConnectionRefusedError:
+            print(f"Failed to connect to WorkerNode {worker_host}:{worker_port}")
+        return None
 
     def monitor_nodes(self):
         """Monitor worker nodes for heartbeats."""
@@ -90,5 +149,5 @@ class MasterNode:
 
 # Run master node
 if __name__ == "__main__":
-    master = MasterNode(host="10.8.1.98", port=5000, metadata_file="metadata.json")
+    master = MasterNode(host="localhost", port=5000, metadata_file="metadata.json")
     master.start()
