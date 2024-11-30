@@ -3,6 +3,7 @@ import threading
 import json
 import time
 import os
+import zlib  # Compression library
 
 class WorkerNode:
     def __init__(self, node_id, master_host, master_port, hostip, storage_dir):
@@ -37,7 +38,7 @@ class WorkerNode:
                 block_id = data['block_id']
                 block_data = data['data']
                 self.write_block_to_disk(file_name, block_id, block_data)
-                print(f"Stored block {block_id} of file {file_name} with data: {block_data}")
+                print(f"Stored compressed block {block_id} of file {file_name}.")
                 client_socket.send(b"Block written")
 
             elif data['action'] == 'read_block':
@@ -53,20 +54,31 @@ class WorkerNode:
             client_socket.close()
 
     def write_block_to_disk(self, file_name, block_id, block_data):
-        """Write block data to disk, organized by file name."""
+        """Compress and write block data to disk, organized by file name."""
         file_dir = os.path.join(self.storage_dir, file_name)
         if not os.path.exists(file_dir):
             os.makedirs(file_dir)  # Create a directory for the file if it doesn't exist
-        block_file_path = os.path.join(file_dir, f"{block_id}.txt")
-        with open(block_file_path, 'w') as block_file:
-            block_file.write(block_data)
+
+        block_file_path = os.path.join(file_dir, f"{block_id}.bin")
+        
+        # Compress the block data
+        compressed_data = zlib.compress(block_data.encode())
+        
+        # Write compressed data to disk
+        with open(block_file_path, 'wb') as block_file:
+            block_file.write(compressed_data)
 
     def read_block_from_disk(self, file_name, block_id):
-        """Read block data from disk, given file name and block ID."""
-        block_file_path = os.path.join(self.storage_dir, file_name, f"{block_id}.txt")
+        """Read and decompress block data from disk."""
+        block_file_path = os.path.join(self.storage_dir, file_name, f"{block_id}.bin")
         if os.path.exists(block_file_path):
-            with open(block_file_path, 'r') as block_file:
-                return block_file.read()
+            # Read compressed data from disk
+            with open(block_file_path, 'rb') as block_file:
+                compressed_data = block_file.read()
+            
+            # Decompress the block data
+            decompressed_data = zlib.decompress(compressed_data).decode()
+            return decompressed_data
         return None
 
     def start(self, host, port):
@@ -87,9 +99,9 @@ if __name__ == "__main__":
 
     worker = WorkerNode(
         node_id="node2",
-        master_host="localhost",
+        master_host="10.30.55.88",
         master_port=5000,
-        hostip="localhost",
+        hostip="10.30.55.88",
         storage_dir=storage_directory
     )
-    worker.start(host="localhost", port=5003)
+    worker.start(host="10.30.55.88", port=5001)
