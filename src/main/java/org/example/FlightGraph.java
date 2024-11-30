@@ -11,11 +11,17 @@ public class FlightGraph {
     private static long lastUpdate = System.currentTimeMillis(); // Throttling for UI updates
 
     static {
-        chart = new CategoryChartBuilder().width(800).height(600)
-                .title("Delayed Flights vs Airlines")
-                .xAxisTitle("Airlines")
-                .yAxisTitle("Number of Delays")
-                .build();
+        //TODO: change this chart
+//        chart = new CategoryChartBuilder().width(800).height(600)
+//                .title("Delayed Flights vs Airlines")
+//                .xAxisTitle("Airlines")
+//                .yAxisTitle("Number of Delays")
+//                .build();
+//        chart = new CategoryChartBuilder().width(800).height(600)
+//                .title("No. of Flights vs Origin Airports")
+//                .xAxisTitle("Origin Airport")
+//                .yAxisTitle("Number of Flights")
+//                .build();
 
         chart.getStyler().setLegendPosition(Styler.LegendPosition.InsideNW);
         chart.getStyler().setHasAnnotations(true);
@@ -34,7 +40,7 @@ public class FlightGraph {
         delayedFlightCounts.put(airline, (int) count);
 
         long now = System.currentTimeMillis();
-
+//        chart.setXAxisTitle();
         // Throttling updates to avoid frequent repainting (every 5 seconds)
 //        if (now - lastUpdate < 5000) {
 //            return; // Skip if less than 5 seconds since last update
