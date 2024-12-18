@@ -19,7 +19,7 @@ The custom file system used to store the flight data.
     - You can set up multiple data nodes in this fashion.
 
 3. **Client**
-    - Connect to the master node at athe correct IP and send json requests.
+    - Connect to the master node at the correct IP and send json requests.
         - **For Writing:**
             - Split file into blocks (block1, block2, etc) and block_data should have the data in each block. See client.py for an example.
             - Send write request with the action as write, file name, blocks and block data. See client.py for an example
