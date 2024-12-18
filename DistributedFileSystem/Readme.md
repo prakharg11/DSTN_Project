@@ -21,10 +21,10 @@ The custom file system used to store the flight data.
 3. **Client**
     - Connect to the master node at athe correct IP and send json requests.
         - **For Writing:**
-            -Split file into blocks (block1, block2, etc) and block_data should have the data in each block. See client.py for an example.
-            -Send write request with the action as write, file name, blocks and block data. See client.py for an example
+            - Split file into blocks (block1, block2, etc) and block_data should have the data in each block. See client.py for an example.
+            - Send write request with the action as write, file name, blocks and block data. See client.py for an example
         - **For Reading**
-            -Send a read request with the action as read and file name. See client.py for an example.
+            - Send a read request with the action as read and file name. See client.py for an example.
 
 
 
