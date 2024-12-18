@@ -23,7 +23,7 @@ public class DelayedFlightsGraph {
         // Set up the Flink execution environment
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 
-        String bootstrapServers = "localhost:9093"; // Adjust for your environment
+        String bootstrapServers = "10.30.68.61:9093"; // TODO: Change this ip address and port number
         String inputTopic = "flights-topic";
 
         // Configure the Kafka source
@@ -67,8 +67,7 @@ public class DelayedFlightsGraph {
                 })
                 .keyBy(carrier -> carrier)
                 .process(new UpdateGraphOnEvent())
-                .print();
-        // Print results (optional)
+                .print(); // Print results (optional)
 
 
         // Execute the Flink job
@@ -98,17 +97,6 @@ public class DelayedFlightsGraph {
                 FlightGraph.updateGraph(carrier, currentCount);
             }
             out.collect("Airline: " + carrier + ", Delayed Flights: " + currentCount);
-        }
-    }
-
-    // Custom ProcessWindowFunction to count delayed flights
-    public static class CountDelayedFlights extends ProcessWindowFunction<String, String, String, TimeWindow> {
-        @Override
-        public void process(String carrier, Context context, Iterable<String> elements, Collector<String> out) {
-            long count = elements.spliterator().estimateSize(); // Count delayed flights
-            System.out.println("HI");
-            FlightGraph.updateGraph(carrier, count); // Update the graph dynamically
-            out.collect("Airline: " + carrier + ", Delayed Flights: " + count); // Optional logging
         }
     }
 }

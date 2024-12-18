@@ -11,17 +11,17 @@ public class FlightGraph {
     private static long lastUpdate = System.currentTimeMillis(); // Throttling for UI updates
 
     static {
-        //TODO: change this chart
+        //TODO: change this chart accordingly if you are running DelayedFlightsGraph or numFlightsAirport graph
 //        chart = new CategoryChartBuilder().width(800).height(600)
 //                .title("Delayed Flights vs Airlines")
 //                .xAxisTitle("Airlines")
 //                .yAxisTitle("Number of Delays")
 //                .build();
-//        chart = new CategoryChartBuilder().width(800).height(600)
-//                .title("No. of Flights vs Origin Airports")
-//                .xAxisTitle("Origin Airport")
-//                .yAxisTitle("Number of Flights")
-//                .build();
+        chart = new CategoryChartBuilder().width(800).height(600)
+                .title("No. of Flights vs Origin Airports")
+                .xAxisTitle("Origin Airport")
+                .yAxisTitle("Number of Flights")
+                .build();
 
         chart.getStyler().setLegendPosition(Styler.LegendPosition.InsideNW);
         chart.getStyler().setHasAnnotations(true);

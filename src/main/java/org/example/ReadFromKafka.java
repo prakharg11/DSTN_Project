@@ -14,16 +14,15 @@ import java.util.*;
 
 public class ReadFromKafka {
     private static final Gson gson = new Gson();
-    private static final String masterHost = "10.30.55.88";  // Master Node IP
-    private static final int masterPort = 5000;              // Master Node Port
+    private static final String masterHost = "10.30.68.61";  // TODO:Change this ip address (Master Node IP)
+    private static final int masterPort = 5000;              // TODO:Change this PORT number (Master Node Port)
     private static final Map<String, Integer> carrierBlockMap = new HashMap<>();
 
     public static void main(String[] args) throws Exception {
         boolean inDocker = new File("/.dockerenv").exists();
-        String bootstrapServers = inDocker ? "kafka:9092" : "10.30.68.61:9093";
+        String bootstrapServers = inDocker ? "kafka:9092" : "10.30.68.61:9093"; //TODO: Change this ip address (KAFKA SERVER ADDRESS)
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
         String inputTopic = "flights-topic";
-//        carrierBlockMap.put("UA", 10 + 1);
         KafkaSource<String> kafkaSource = KafkaSource.<String>builder()
                 .setBootstrapServers(bootstrapServers)
                 .setTopics(inputTopic)
@@ -145,6 +144,10 @@ public class ReadFromKafka {
             System.out.printf("Average Departure Delay: %.2f minutes\n", depCount > 0 ? totalDepDelay / depCount : 0);
             System.out.printf("Average Arrival Delay: %.2f minutes\n", arrCount > 0 ? totalArrDelay / arrCount : 0);
             System.out.printf("Average Airtime: %.2f minutes\n", airTimeCount > 0 ? totalAirTime / airTimeCount : 0);
+            double avgDept = depCount > 0 ? totalDepDelay / depCount : 1;
+            double avgArr = arrCount > 0 ? totalArrDelay / arrCount : 1;
+            double avgAirtime = airTimeCount > 0 ? totalAirTime / airTimeCount : 1;
+            System.out.printf("Satisfaction Score of Airline: %.2f \n", (avgDept*2 + avgArr)/avgAirtime );
 
         } catch (Exception e) {
             System.err.println("Error querying flight data: " + e.getMessage());

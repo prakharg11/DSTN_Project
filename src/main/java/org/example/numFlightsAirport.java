@@ -20,7 +20,7 @@ public class numFlightsAirport {
         // Set up the Flink execution environment
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 
-        String bootstrapServers = "localhost:9093"; // Adjust for your environment
+        String bootstrapServers = "10.30.68.61:9093"; // TODO: Change this ip address
         String inputTopic = "flights-topic";
 
         // Configure the Kafka source
