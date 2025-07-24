@@ -2,7 +2,7 @@
 
 This project implements an end-to-end architecture for processing and storing **flights data streams**, completed as part of the **Data Storage Technologies and Networks** (CS F446) coursework at BITS Pilani, K K Birla Goa Campus, under the guidance of **Dr. Arnab K. Paul**.
 
-The system is built to handle real-time IoT data using **Apache Kafka**, **Apache Flink**, and a **custom-built distributed file system**. The implementation includes data compression and fault tolerance.
+The system is built to handle real-time IoT flight data using **Apache Kafka**, **Apache Flink**, and a **custom-built distributed file system**. The implementation includes data compression and fault tolerance.
 
 ---
 
